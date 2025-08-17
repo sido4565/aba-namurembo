@@ -3,143 +3,184 @@
 <head>
   <meta charset="UTF-8">
   <title>Family Contributions</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f9f9f9;
-    }
-    h1 {
-      text-align: center;
-    }
-    .form-container, .search-container {
-      background: white;
-      padding: 15px;
-      margin: 10px auto;
-      border-radius: 10px;
-      max-width: 400px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    input, button {
-      padding: 10px;
-      margin: 5px 0;
-      width: 100%;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-    }
-    button {
-      background: #4CAF50;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #45a049;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      background: #fff;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    h1 { text-align: center; }
+    .card { background: white; padding: 20px; margin: 20px auto; max-width: 400px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    input, button { width: 100%; padding: 10px; margin-top: 10px; }
+    .hidden { display: none; }
+    .contribution { padding: 5px; border-bottom: 1px solid #ddd; }
   </style>
 </head>
 <body>
 
   <h1>💰 Family Contributions</h1>
 
-  <!-- Add Contribution Form -->
-  <div class="form-container">
-    <h3>Add Contribution</h3>
-    <input type="text" id="name" placeholder="Enter name">
-    <input type="number" id="amount" placeholder="Enter amount">
-    <button onclick="addContribution()">Submit</button>
+  <!-- 🔑 Login Section -->
+  <div id="login-card" class="card">
+    <h2>Login</h2>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p>Or <a href="#" onclick="signup()">Sign up</a></p>
   </div>
 
-  <!-- Search Contributions -->
-  <div class="search-container">
-    <h3>Search Contributions</h3>
-    <input type="text" id="searchInput" placeholder="Search by name..." oninput="searchContributions()">
+  <!-- 🏦 Contributions Section -->
+  <div id="app-card" class="hidden">
+    <button onclick="logout()">Logout</button>
+
+    <div class="card">
+      <h2>Add Contribution</h2>
+      <input type="text" id="nameInput" placeholder="Enter name">
+      <input type="number" id="amountInput" placeholder="Enter amount">
+      <button onclick="addContribution()">Submit</button>
+    </div>
+
+    <div class="card">
+      <h2>Search Contributions</h2>
+      <input type="text" id="searchInput" placeholder="Search by name..." oninput="searchContributions()">
+      <div id="searchResults"></div>
+    </div>
+
+    <div class="card">
+      <h2>All Contributions</h2>
+      <div id="contributionsList"></div>
+      <button onclick="exportPDF()">Export PDF</button>
+      <button onclick="exportExcel()">Export Excel</button>
+    </div>
   </div>
 
-  <!-- Contributions List -->
-  <h3>Contributions</h3>
-  <ul id="contributionsList"></ul>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-  <script>
-    // Firebase config
+    // 🔥 Replace with your Firebase Config
     const firebaseConfig = {
-      apiKey: "AIzaSyDN7zu2pc-DRSTzEZLYq4BCXDKItiwbDi8",
-      authDomain: "family-contributions.firebaseapp.com",
-      projectId: "family-contributions",
-      storageBucket: "family-contributions.appspot.com",
-      messagingSenderId: "322744991780",
-      appId: "1:322744991780:web:eb4843cf64ef3245a21b1"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
 
-    // Init Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // Add contribution
-    function addContribution() {
-      const name = document.getElementById("name").value.trim();
-      const amount = document.getElementById("amount").value.trim();
+    const loginCard = document.getElementById("login-card");
+    const appCard = document.getElementById("app-card");
+    const contributionsList = document.getElementById("contributionsList");
+    const searchResults = document.getElementById("searchResults");
 
-      if (!name || !amount) {
-        alert("Please fill in both fields.");
-        return;
+    // 🔑 Auth Functions
+    window.login = async function() {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert("Login failed: " + err.message);
       }
+    };
 
-      db.collection("contributions").add({
-        name: name,
+    window.signup = async function() {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        alert("Account created! Please login.");
+      } catch (err) {
+        alert("Signup failed: " + err.message);
+      }
+    };
+
+    window.logout = async function() {
+      await signOut(auth);
+    };
+
+    // 👀 Auth state listener
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loginCard.classList.add("hidden");
+        appCard.classList.remove("hidden");
+      } else {
+        loginCard.classList.remove("hidden");
+        appCard.classList.add("hidden");
+      }
+    });
+
+    // ➕ Add contribution
+    window.addContribution = async function() {
+      const name = document.getElementById("nameInput").value;
+      const amount = document.getElementById("amountInput").value;
+      if (!name || !amount) return alert("Enter name and amount");
+
+      await addDoc(collection(db, "contributions"), {
+        name,
         amount: parseFloat(amount),
         date: new Date().toISOString()
-      }).then(() => {
-        document.getElementById("name").value = "";
-        document.getElementById("amount").value = "";
-      }).catch(err => console.error(err));
-    }
-
-    // Real-time listener
-    let contributions = [];
-    db.collection("contributions").orderBy("date", "desc")
-      .onSnapshot(snapshot => {
-        contributions = [];
-        snapshot.forEach(doc => {
-          contributions.push(doc.data());
-        });
-        displayContributions(contributions);
       });
 
-    // Display contributions
-    function displayContributions(list) {
-      const ul = document.getElementById("contributionsList");
-      ul.innerHTML = "";
-      list.forEach(item => {
-        ul.innerHTML += `<li><b>${item.name}</b>: $${item.amount}</li>`;
-      });
-    }
+      document.getElementById("nameInput").value = "";
+      document.getElementById("amountInput").value = "";
+    };
 
-    // Search contributions
-    function searchContributions() {
-      const query = document.getElementById("searchInput").value.toLowerCase();
-      const filtered = contributions.filter(c => 
-        c.name.toLowerCase().includes(query)
-      );
-      displayContributions(filtered);
-    }
+    // 📡 Real-time updates
+    const q = query(collection(db, "contributions"), orderBy("date", "desc"));
+    onSnapshot(q, (snapshot) => {
+      contributionsList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        contributionsList.innerHTML += `<div class="contribution"><b>${data.name}</b> - $${data.amount}</div>`;
+      });
+    });
+
+    // 🔍 Search by name
+    window.searchContributions = function() {
+      const term = document.getElementById("searchInput").value.toLowerCase();
+      const contributions = contributionsList.querySelectorAll(".contribution");
+      searchResults.innerHTML = "";
+      contributions.forEach(c => {
+        if (c.innerText.toLowerCase().includes(term)) {
+          searchResults.appendChild(c.cloneNode(true));
+        }
+      });
+    };
+
+    // 📤 Export PDF
+    window.exportPDF = function() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Family Contributions", 20, 20);
+      let y = 40;
+      const contributions = contributionsList.querySelectorAll(".contribution");
+      contributions.forEach(c => {
+        doc.text(c.innerText, 20, y);
+        y += 10;
+      });
+      doc.save("contributions.pdf");
+    };
+
+    // 📤 Export Excel
+    window.exportExcel = function() {
+      const rows = [["Name", "Amount"]];
+      const contributions = contributionsList.querySelectorAll(".contribution");
+      contributions.forEach(c => {
+        const parts = c.innerText.split(" - $");
+        rows.push([parts[0], parts[1]]);
+      });
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Contributions");
+      XLSX.writeFile(wb, "contributions.xlsx");
+    };
   </script>
 </body>
 </html>
