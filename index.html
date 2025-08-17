@@ -2,271 +2,144 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Family Contributions</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ABA NAMUREMBO - Family Contributions Group</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f5f7fa;
-      margin: 0;
-      padding: 0;
-      color: #333;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
     }
-    header {
+    h1 {
       text-align: center;
-      background: linear-gradient(135deg, #ffcc00, #ff9900);
-      padding: 30px 20px;
-      border-radius: 0 0 20px 20px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
-    header h1 {
-      margin: 0;
-      font-size: 2.5em;
-      color: #004400;
-    }
-    header p.motto {
-      font-style: italic;
-      margin-top: 5px;
-      color: #333;
-    }
-    main {
-      padding: 20px;
-      max-width: 1000px;
-      margin: auto;
-    }
-    section {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    }
-    h2 {
-      margin-top: 0;
-      color: #006600;
-    }
-    #member-search {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    .member-card {
-      background: #e8ffe8;
+    .form-container, .search-container {
+      background: white;
       padding: 15px;
+      margin: 10px auto;
       border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
-      cursor: pointer;
-      margin-bottom: 10px;
+      max-width: 400px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .member-card:hover {
-      transform: translateY(-5px);
-      background: #d1f7d1;
-    }
-    input, button, select {
+    input, button {
       padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
       margin: 5px 0;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ddd;
     }
     button {
-      background: #006600;
+      background: #4CAF50;
       color: white;
-      border: none;
       font-weight: bold;
       cursor: pointer;
-      transition: 0.2s;
     }
     button:hover {
-      background: #009900;
+      background: #45a049;
     }
-    .contribution-item {
-      background: #f0f0f0;
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #fff;
       margin: 5px 0;
-      padding: 8px;
+      padding: 10px;
       border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
-    #analysis {
-      text-align: center;
-    }
-    #contribution-chart {
-      max-width: 500px;
-      margin: auto;
-    }
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.6);
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-content {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      width: 90%;
-      max-width: 500px;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      animation: fadeIn 0.3s ease;
-    }
-    @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
-    .close-btn {
-      float: right;
-      background: #ff4444;
-      border: none;
-      color: white;
-      border-radius: 8px;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-    .close-btn:hover { background: #cc0000; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>ABA NAMUREMBO</h1>
-    <p class="motto">Together as a family, we build our future – one contribution at a time.</p>
-    <p>Welcome to our cherished family contributions group. Let's nurture our shared dreams with every Kenyan Shilling.</p>
-  </header>
 
-  <main>
-    <section id="members">
-      <h2>Find a Family Member</h2>
-      <input type="text" id="member-search" placeholder="Type a name to search...">
-      <div id="member-list"></div>
-      <form id="add-member-form">
-        <input type="text" id="new-member" placeholder="Enter new member's name" required>
-        <button type="submit">Add New Family Member</button>
-      </form>
-    </section>
+  <h1>💰 Family Contributions</h1>
 
-    <section id="analysis">
-      <h2>Overall Family Progress</h2>
-      <p>Total Family Savings: <span id="total-savings">0</span> KES</p>
-      <canvas id="contribution-chart"></canvas>
-    </section>
-  </main>
-
-  <!-- Modal for Member Personal Window -->
-  <div class="modal" id="member-modal">
-    <div class="modal-content">
-      <button class="close-btn" id="close-modal">X</button>
-      <div id="modal-body"></div>
-    </div>
+  <!-- Add Contribution Form -->
+  <div class="form-container">
+    <h3>Add Contribution</h3>
+    <input type="text" id="name" placeholder="Enter name">
+    <input type="number" id="amount" placeholder="Enter amount">
+    <button onclick="addContribution()">Submit</button>
   </div>
 
+  <!-- Search Contributions -->
+  <div class="search-container">
+    <h3>Search Contributions</h3>
+    <input type="text" id="searchInput" placeholder="Search by name..." oninput="searchContributions()">
+  </div>
+
+  <!-- Contributions List -->
+  <h3>Contributions</h3>
+  <ul id="contributionsList"></ul>
+
   <script>
-    let familyData = { members: ['DAD','MOM','PIPI','NAWI','MAGA','REGI','LOLO','ZAC','LEONE','ANDY','PATRICE','JOHN','JOFU','NORA','PAUL','DUVU'], contributions:{} };
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDN7zu2pc-DRSTzEZLYq4BCXDKItiwbDi8",
+      authDomain: "family-contributions.firebaseapp.com",
+      projectId: "family-contributions",
+      storageBucket: "family-contributions.appspot.com",
+      messagingSenderId: "322744991780",
+      appId: "1:322744991780:web:eb4843cf64ef3245a21b1"
+    };
 
-    function initData(){ familyData.members.forEach(m=>{ if(!familyData.contributions[m]) familyData.contributions[m]=[]; }); }
-    function loadData(){ const d=localStorage.getItem('abaNamuremboData'); if(d) familyData=JSON.parse(d); else {initData(); saveData();} }
-    function saveData(){ localStorage.setItem('abaNamuremboData',JSON.stringify(familyData)); }
+    // Init Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    function renderMembers(search=''){
-      const list=document.getElementById('member-list');
-      list.innerHTML='';
-      const found=familyData.members.filter(m=>m.toLowerCase().includes(search.toLowerCase()));
-      found.forEach(member=>{
-        const card=document.createElement('div');
-        card.className='member-card';
-        card.textContent=member;
-        card.addEventListener('click',()=>openMemberModal(member));
-        list.appendChild(card);
-      });
-    }
+    // Add contribution
+    function addContribution() {
+      const name = document.getElementById("name").value.trim();
+      const amount = document.getElementById("amount").value.trim();
 
-    function openMemberModal(member){
-      const modal=document.getElementById('member-modal');
-      const body=document.getElementById('modal-body');
-      modal.style.display='flex';
-      body.innerHTML=`<h3>${member}'s Contributions</h3>`;
-
-      const form=document.createElement('form');
-      form.innerHTML=`<input type="date" required><input type="number" placeholder="Amount in KES" min="0" required><button type="submit">Add</button>`;
-      form.addEventListener('submit',e=>{
-        e.preventDefault();
-        const date=form.querySelector('input[type=date]').value;
-        const amt=parseFloat(form.querySelector('input[type=number]').value);
-        familyData.contributions[member].push({date,amount:amt});
-        saveData(); openMemberModal(member); renderAnalysis();
-      });
-      body.appendChild(form);
-
-      const ul=document.createElement('ul');
-      familyData.contributions[member].forEach(c=>{
-        const li=document.createElement('li');
-        li.className='contribution-item';
-        li.textContent=`${c.date}: ${c.amount.toLocaleString()} KES`;
-        ul.appendChild(li);
-      });
-      body.appendChild(ul);
-
-      const exportDiv=document.createElement('div');
-      const pdfBtn=document.createElement('button'); pdfBtn.textContent='Export PDF';
-      pdfBtn.onclick=()=>exportPDF(member);
-      const excelBtn=document.createElement('button'); excelBtn.textContent='Export Excel';
-      excelBtn.onclick=()=>exportExcel(member);
-      exportDiv.appendChild(pdfBtn); exportDiv.appendChild(excelBtn);
-      body.appendChild(exportDiv);
-    }
-
-    function exportPDF(member){
-      const { jsPDF } = window.jspdf;
-      const doc=new jsPDF();
-      doc.text(`${member}'s Contributions`,10,10);
-      let y=20;
-      familyData.contributions[member].forEach(c=>{
-        doc.text(`${c.date}: ${c.amount} KES`,10,y);
-        y+=10;
-      });
-      doc.save(`${member}_contributions.pdf`);
-    }
-    function exportExcel(member){
-      const data=familyData.contributions[member].map(c=>({Date:c.date,Amount:c.amount}));
-      const ws=XLSX.utils.json_to_sheet(data);
-      const wb=XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb,ws,member);
-      XLSX.writeFile(wb,`${member}_contributions.xlsx`);
-    }
-
-    function renderAnalysis(){
-      let total=0; const totals={};
-      familyData.members.forEach(m=>{totals[m]=familyData.contributions[m].reduce((s,c)=>s+c.amount,0); total+=totals[m];});
-      document.getElementById('total-savings').textContent=total.toLocaleString();
-      const ctx=document.getElementById('contribution-chart').getContext('2d');
-      if(window.myChart) window.myChart.destroy();
-      window.myChart=new Chart(ctx,{type:'pie',data:{labels:familyData.members,datasets:[{data:familyData.members.map(m=>totals[m]),backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40','#ADFF2F','#FFD700','#20B2AA','#87CEEB','#778899','#B0C4DE','#FFE4C4','#FF4500','#E6E6FA','#CD5C5C']}]},options:{responsive:true,plugins:{legend:{position:'top'}}}});
-    }
-
-    document.getElementById('add-member-form').addEventListener('submit',e=>{
-      e.preventDefault();
-      const name=document.getElementById('new-member').value.trim().toUpperCase();
-      if(name&&!familyData.members.includes(name)){
-        familyData.members.push(name);
-        familyData.contributions[name]=[];
-        saveData(); renderMembers(); renderAnalysis();
-        document.getElementById('new-member').value='';
+      if (!name || !amount) {
+        alert("Please fill in both fields.");
+        return;
       }
-    });
 
-    document.getElementById('member-search').addEventListener('input',e=>renderMembers(e.target.value));
-    document.getElementById('close-modal').addEventListener('click',()=>document.getElementById('member-modal').style.display='none');
+      db.collection("contributions").add({
+        name: name,
+        amount: parseFloat(amount),
+        date: new Date().toISOString()
+      }).then(() => {
+        document.getElementById("name").value = "";
+        document.getElementById("amount").value = "";
+      }).catch(err => console.error(err));
+    }
 
-    loadData(); renderMembers(); renderAnalysis();
+    // Real-time listener
+    let contributions = [];
+    db.collection("contributions").orderBy("date", "desc")
+      .onSnapshot(snapshot => {
+        contributions = [];
+        snapshot.forEach(doc => {
+          contributions.push(doc.data());
+        });
+        displayContributions(contributions);
+      });
+
+    // Display contributions
+    function displayContributions(list) {
+      const ul = document.getElementById("contributionsList");
+      ul.innerHTML = "";
+      list.forEach(item => {
+        ul.innerHTML += `<li><b>${item.name}</b>: $${item.amount}</li>`;
+      });
+    }
+
+    // Search contributions
+    function searchContributions() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const filtered = contributions.filter(c => 
+        c.name.toLowerCase().includes(query)
+      );
+      displayContributions(filtered);
+    }
   </script>
 </body>
 </html>
