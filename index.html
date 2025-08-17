@@ -1,319 +1,326 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ABA NAMUREMBO - Family Contributions Group</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f4e8;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        header {
-            text-align: center;
-            background-color: #ffcc00;
-            padding: 20px;
-            border-radius: 10px;
-        }
-        h1 {
-            color: #006600;
-        }
-        p.motto {
-            font-style: italic;
-            color: #666;
-        }
-        section {
-            margin: 20px 0;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        #member-search {
-            margin-bottom: 10px;
-        }
-        #member-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .member-card {
-            background-color: #e6ffe6;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .remove-btn {
-            background-color: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            padding: 2px 5px;
-        }
-        .remove-btn:hover {
-            background-color: #cc0000;
-        }
-        form {
-            margin-top: 10px;
-        }
-        input[type="text"], input[type="date"], input[type="number"] {
-            padding: 5px;
-            margin-right: 5px;
-        }
-        button {
-            padding: 5px 10px;
-            background-color: #006600;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #009900;
-        }
-        .contribution-list {
-            list-style-type: none;
-            padding: 0;
-        }
-        .contribution-item {
-            background-color: #f0f0f0;
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 3px;
-        }
-        #analysis {
-            text-align: center;
-        }
-        #chart {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ABA NAMUREMBO - Family Contributions Group</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      background: linear-gradient(135deg, #ffcc00, #ff9900);
+      padding: 30px 20px;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5em;
+      color: #004400;
+    }
+    header p.motto {
+      font-style: italic;
+      margin-top: 5px;
+      color: #333;
+    }
+    main {
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #006600;
+    }
+    #member-search {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    #member-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+    }
+    .member-card {
+      background: #e8ffe8;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+      cursor: pointer;
+    }
+    .member-card:hover {
+      transform: translateY(-5px);
+      background: #d1f7d1;
+    }
+    .remove-btn {
+      background: #ff4444;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      padding: 5px 8px;
+      margin-top: 8px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    .remove-btn:hover { background: #cc0000; }
+
+    input, button, select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin: 5px 0;
+    }
+    button {
+      background: #006600;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: #009900;
+    }
+    .contribution-item {
+      background: #f0f0f0;
+      margin: 5px 0;
+      padding: 8px;
+      border-radius: 6px;
+    }
+    #analysis {
+      text-align: center;
+    }
+    #contribution-chart {
+      max-width: 500px;
+      margin: auto;
+    }
+    /* Modal for personal member window */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+    .close-btn {
+      float: right;
+      background: #ff4444;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .close-btn:hover { background: #cc0000; }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>ABA NAMUREMBO</h1>
-        <p class="motto">Together as a family, we build our future – one contribution at a time.</p>
-        <p>Welcome to our cherished family contributions group. Let's nurture our shared dreams with every Kenyan Shilling.</p>
-    </header>
+  <header>
+    <h1>ABA NAMUREMBO</h1>
+    <p class="motto">Together as a family, we build our future – one contribution at a time.</p>
+    <p>Welcome to our cherished family contributions group. Let's nurture our shared dreams with every Kenyan Shilling.</p>
+  </header>
 
+  <main>
     <section id="members">
-        <h2>Our Beloved Family Members</h2>
-        <input type="text" id="member-search" placeholder="Search for a family member...">
-        <div id="member-list"></div>
-        <form id="add-member-form">
-            <input type="text" id="new-member" placeholder="Enter new member's name" required>
-            <button type="submit">Add New Family Member</button>
-        </form>
+      <h2>Our Beloved Family Members</h2>
+      <input type="text" id="member-search" placeholder="Search for a family member...">
+      <div id="member-list"></div>
+      <form id="add-member-form">
+        <input type="text" id="new-member" placeholder="Enter new member's name" required>
+        <button type="submit">Add New Family Member</button>
+      </form>
     </section>
 
     <section id="contributions">
-        <h2>Family Contributions</h2>
-        <p>Select a member to view or add contributions in Kenyan Shillings (KES).</p>
-        <div id="contribution-sections"></div>
+      <h2>Family Contributions</h2>
+      <p>Select a member to view or add contributions.</p>
+      <div id="contribution-sections"></div>
     </section>
 
     <section id="analysis">
-        <h2>Overall Family Progress</h2>
-        <p>Total Family Savings: <span id="total-savings">0</span> KES</p>
-        <p>Watch our collective growth! The chart below shows each member's total contributions.</p>
-        <canvas id="contribution-chart"></canvas>
+      <h2>Overall Family Progress</h2>
+      <p>Total Family Savings: <span id="total-savings">0</span> KES</p>
+      <canvas id="contribution-chart"></canvas>
     </section>
+  </main>
 
-    <script>
-        // Data structure
-        let familyData = {
-            members: ['DAD', 'MOM', 'PIPI', 'NAWI', 'MAGA', 'REGI', 'LOLO', 'ZAC', 'LEONE', 'ANDY', 'PATRICE', 'JOHN', 'JOFU', 'NORA', 'PAUL', 'DUVU'],
-            contributions: {}
-        };
+  <!-- Modal for Member Personal Window -->
+  <div class="modal" id="member-modal">
+    <div class="modal-content">
+      <button class="close-btn" id="close-modal">X</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
 
-        // Initialize contributions for each member
-        function initData() {
-            familyData.members.forEach(member => {
-                if (!familyData.contributions[member]) {
-                    familyData.contributions[member] = [];
-                }
-            });
-        }
+  <script>
+    let familyData = {
+      members: ['DAD', 'MOM', 'PIPI', 'NAWI', 'MAGA', 'REGI', 'LOLO', 'ZAC', 'LEONE', 'ANDY', 'PATRICE', 'JOHN', 'JOFU', 'NORA', 'PAUL', 'DUVU'],
+      contributions: {}
+    };
 
-        // Load data from localStorage
-        function loadData() {
-            const storedData = localStorage.getItem('abaNamuremboData');
-            if (storedData) {
-                familyData = JSON.parse(storedData);
-            } else {
-                initData();
-                saveData();
-            }
-        }
+    function initData() {
+      familyData.members.forEach(member => {
+        if (!familyData.contributions[member]) familyData.contributions[member] = [];
+      });
+    }
+    function loadData() {
+      const stored = localStorage.getItem('abaNamuremboData');
+      if (stored) familyData = JSON.parse(stored);
+      else { initData(); saveData(); }
+    }
+    function saveData() {
+      localStorage.setItem('abaNamuremboData', JSON.stringify(familyData));
+    }
 
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem('abaNamuremboData', JSON.stringify(familyData));
-        }
-
-        // Render member list with search filter
-        function renderMembers(searchTerm = '') {
-            const memberList = document.getElementById('member-list');
-            memberList.innerHTML = '';
-            const filteredMembers = familyData.members.filter(member => 
-                member.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-            filteredMembers.forEach(member => {
-                const card = document.createElement('div');
-                card.className = 'member-card';
-                card.innerHTML = `
-                    ${member}
-                    <button class="remove-btn" data-member="${member}">Remove</button>
-                `;
-                card.querySelector('.remove-btn').addEventListener('click', () => {
-                    if (confirm(`Are you sure you want to remove ${member}?`)) {
-                        familyData.members = familyData.members.filter(m => m !== member);
-                        delete familyData.contributions[member];
-                        saveData();
-                        renderMembers(searchTerm);
-                        renderContributions();
-                        renderAnalysis();
-                    }
-                });
-                memberList.appendChild(card);
-            });
-        }
-
-        // Render contribution sections
-        function renderContributions() {
-            const sections = document.getElementById('contribution-sections');
-            sections.innerHTML = '';
-            const select = document.createElement('select');
-            select.id = 'member-select';
-            select.innerHTML = '<option value="">Select a member</option>';
-            familyData.members.forEach(member => {
-                select.innerHTML += `<option value="${member}">${member}</option>`;
-            });
-            sections.appendChild(select);
-
-            const contribDiv = document.createElement('div');
-            contribDiv.id = 'selected-member-contrib';
-            sections.appendChild(contribDiv);
-
-            select.addEventListener('change', () => {
-                const member = select.value;
-                contribDiv.innerHTML = '';
-                if (member) {
-                    const div = document.createElement('div');
-                    div.innerHTML = `<h3>${member}'s Contributions</h3>`;
-                    
-                    // Form to add contribution
-                    const form = document.createElement('form');
-                    form.innerHTML = `
-                        <input type="date" class="contrib-date" required>
-                        <input type="number" class="contrib-amount" placeholder="Amount in KES" min="0" required>
-                        <button type="submit">Add Contribution</button>
-                    `;
-                    form.addEventListener('submit', (e) => {
-                        e.preventDefault();
-                        const date = form.querySelector('.contrib-date').value;
-                        const amount = parseFloat(form.querySelector('.contrib-amount').value);
-                        if (date && amount) {
-                            familyData.contributions[member].push({ date, amount });
-                            saveData();
-                            renderContributions();
-                            renderAnalysis();
-                        }
-                    });
-                    div.appendChild(form);
-
-                    // List of contributions
-                    const ul = document.createElement('ul');
-                    ul.className = 'contribution-list';
-                    familyData.contributions[member].forEach(contrib => {
-                        const li = document.createElement('li');
-                        li.className = 'contribution-item';
-                        li.textContent = `${contrib.date}: ${contrib.amount.toLocaleString()} KES`;
-                        ul.appendChild(li);
-                    });
-                    div.appendChild(ul);
-                    contribDiv.appendChild(div);
-                }
-            });
-        }
-
-        // Render analysis
-        function renderAnalysis() {
-            // Calculate total
-            let total = 0;
-            const memberTotals = {};
-            familyData.members.forEach(member => {
-                memberTotals[member] = familyData.contributions[member].reduce((sum, contrib) => sum + contrib.amount, 0);
-                total += memberTotals[member];
-            });
-            document.getElementById('total-savings').textContent = total.toLocaleString();
-
-            // Chart
-            const ctx = document.getElementById('contribution-chart').getContext('2d');
-            if (window.myChart) {
-                window.myChart.destroy();
-            }
-            window.myChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: familyData.members,
-                    datasets: [{
-                        data: familyData.members.map(m => memberTotals[m]),
-                        backgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-                            '#FF9F40', '#E7E9ED', '#C9CBCF', '#ADFF2F', '#FFD700',
-                            '#20B2AA', '#87CEEB', '#778899', '#B0C4DE', '#FFE4C4', '#FF4500'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'top' },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => `${context.label}: ${context.raw.toLocaleString()} KES`
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Add new member
-        document.getElementById('add-member-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const newMember = document.getElementById('new-member').value.trim().toUpperCase();
-            if (newMember && !familyData.members.includes(newMember)) {
-                familyData.members.push(newMember);
-                familyData.contributions[newMember] = [];
-                saveData();
-                renderMembers(document.getElementById('member-search').value);
-                renderContributions();
-                renderAnalysis();
-                document.getElementById('new-member').value = '';
-            }
+    // Render members grid
+    function renderMembers(searchTerm = '') {
+      const list = document.getElementById('member-list');
+      list.innerHTML = '';
+      familyData.members.filter(m => m.toLowerCase().includes(searchTerm.toLowerCase())).forEach(member => {
+        const card = document.createElement('div');
+        card.className = 'member-card';
+        card.innerHTML = `<strong>${member}</strong><br><button class="remove-btn" data-member="${member}">Remove</button>`;
+        card.addEventListener('click', (e) => {
+          if (e.target.classList.contains('remove-btn')) return;
+          openMemberModal(member);
         });
-
-        // Search functionality
-        document.getElementById('member-search').addEventListener('input', (e) => {
-            renderMembers(e.target.value);
+        card.querySelector('.remove-btn').addEventListener('click', () => {
+          if (confirm(`Remove ${member}?`)) {
+            familyData.members = familyData.members.filter(x => x !== member);
+            delete familyData.contributions[member];
+            saveData(); renderMembers(searchTerm); renderContributions(); renderAnalysis();
+          }
         });
+        list.appendChild(card);
+      });
+    }
 
-        // Initial load
-        loadData();
-        renderMembers();
-        renderContributions();
+    // Modal open
+    function openMemberModal(member) {
+      const modal = document.getElementById('member-modal');
+      const body = document.getElementById('modal-body');
+      modal.style.display = 'flex';
+      body.innerHTML = `<h3>${member}'s Contributions</h3>`;
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="date" required>
+        <input type="number" placeholder="Amount in KES" min="0" required>
+        <button type="submit">Add Contribution</button>`;
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const date = form.querySelector('input[type=date]').value;
+        const amount = parseFloat(form.querySelector('input[type=number]').value);
+        familyData.contributions[member].push({ date, amount });
+        saveData();
+        openMemberModal(member);
         renderAnalysis();
-    </script>
+      });
+      body.appendChild(form);
+
+      const ul = document.createElement('ul');
+      familyData.contributions[member].forEach(c => {
+        const li = document.createElement('li');
+        li.className = 'contribution-item';
+        li.textContent = `${c.date}: ${c.amount.toLocaleString()} KES`;
+        ul.appendChild(li);
+      });
+      body.appendChild(ul);
+    }
+    document.getElementById('close-modal').addEventListener('click', () => {
+      document.getElementById('member-modal').style.display = 'none';
+    });
+
+    function renderContributions() {
+      const div = document.getElementById('contribution-sections');
+      div.innerHTML = '<select id="member-select"><option value="">Select a member</option></select>';
+      const select = div.querySelector('select');
+      familyData.members.forEach(m => {
+        select.innerHTML += `<option value="${m}">${m}</option>`;
+      });
+      select.addEventListener('change', () => {
+        if (select.value) openMemberModal(select.value);
+      });
+    }
+
+    function renderAnalysis() {
+      let total = 0; const totals = {};
+      familyData.members.forEach(m => {
+        totals[m] = familyData.contributions[m].reduce((s,c) => s+c.amount, 0);
+        total += totals[m];
+      });
+      document.getElementById('total-savings').textContent = total.toLocaleString();
+
+      const ctx = document.getElementById('contribution-chart').getContext('2d');
+      if (window.myChart) window.myChart.destroy();
+      window.myChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: familyData.members,
+          datasets: [{
+            data: familyData.members.map(m => totals[m]),
+            backgroundColor: [
+              '#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF',
+              '#FF9F40','#ADFF2F','#FFD700','#20B2AA','#87CEEB',
+              '#778899','#B0C4DE','#FFE4C4','#FF4500','#E6E6FA','#CD5C5C']
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'top' } } }
+      });
+    }
+
+    document.getElementById('add-member-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const input = document.getElementById('new-member');
+      const name = input.value.trim().toUpperCase();
+      if (name && !familyData.members.includes(name)) {
+        familyData.members.push(name);
+        familyData.contributions[name] = [];
+        saveData();
+        renderMembers(); renderContributions(); renderAnalysis();
+        input.value = '';
+      }
+    });
+    document.getElementById('member-search').addEventListener('input', e => renderMembers(e.target.value));
+
+    loadData(); renderMembers(); renderContributions(); renderAnalysis();
+  </script>
 </body>
 </html>
