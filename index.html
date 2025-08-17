@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ABA NAMUREMBO - Family Contributions Group</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -53,11 +55,6 @@
       border: 1px solid #ccc;
       border-radius: 8px;
     }
-    #member-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 15px;
-    }
     .member-card {
       background: #e8ffe8;
       padding: 15px;
@@ -66,23 +63,12 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       transition: transform 0.2s;
       cursor: pointer;
+      margin-bottom: 10px;
     }
     .member-card:hover {
       transform: translateY(-5px);
       background: #d1f7d1;
     }
-    .remove-btn {
-      background: #ff4444;
-      border: none;
-      color: white;
-      border-radius: 6px;
-      padding: 5px 8px;
-      margin-top: 8px;
-      cursor: pointer;
-      font-size: 0.9em;
-    }
-    .remove-btn:hover { background: #cc0000; }
-
     input, button, select {
       padding: 10px;
       border-radius: 8px;
@@ -113,7 +99,7 @@
       max-width: 500px;
       margin: auto;
     }
-    /* Modal for personal member window */
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -159,19 +145,13 @@
 
   <main>
     <section id="members">
-      <h2>Our Beloved Family Members</h2>
-      <input type="text" id="member-search" placeholder="Search for a family member...">
+      <h2>Find a Family Member</h2>
+      <input type="text" id="member-search" placeholder="Type a name to search...">
       <div id="member-list"></div>
       <form id="add-member-form">
         <input type="text" id="new-member" placeholder="Enter new member's name" required>
         <button type="submit">Add New Family Member</button>
       </form>
-    </section>
-
-    <section id="contributions">
-      <h2>Family Contributions</h2>
-      <p>Select a member to view or add contributions.</p>
-      <div id="contribution-sections"></div>
     </section>
 
     <section id="analysis">
@@ -190,137 +170,103 @@
   </div>
 
   <script>
-    let familyData = {
-      members: ['DAD', 'MOM', 'PIPI', 'NAWI', 'MAGA', 'REGI', 'LOLO', 'ZAC', 'LEONE', 'ANDY', 'PATRICE', 'JOHN', 'JOFU', 'NORA', 'PAUL', 'DUVU'],
-      contributions: {}
-    };
+    let familyData = { members: ['DAD','MOM','PIPI','NAWI','MAGA','REGI','LOLO','ZAC','LEONE','ANDY','PATRICE','JOHN','JOFU','NORA','PAUL','DUVU'], contributions:{} };
 
-    function initData() {
-      familyData.members.forEach(member => {
-        if (!familyData.contributions[member]) familyData.contributions[member] = [];
-      });
-    }
-    function loadData() {
-      const stored = localStorage.getItem('abaNamuremboData');
-      if (stored) familyData = JSON.parse(stored);
-      else { initData(); saveData(); }
-    }
-    function saveData() {
-      localStorage.setItem('abaNamuremboData', JSON.stringify(familyData));
-    }
+    function initData(){ familyData.members.forEach(m=>{ if(!familyData.contributions[m]) familyData.contributions[m]=[]; }); }
+    function loadData(){ const d=localStorage.getItem('abaNamuremboData'); if(d) familyData=JSON.parse(d); else {initData(); saveData();} }
+    function saveData(){ localStorage.setItem('abaNamuremboData',JSON.stringify(familyData)); }
 
-    // Render members grid
-    function renderMembers(searchTerm = '') {
-      const list = document.getElementById('member-list');
-      list.innerHTML = '';
-      familyData.members.filter(m => m.toLowerCase().includes(searchTerm.toLowerCase())).forEach(member => {
-        const card = document.createElement('div');
-        card.className = 'member-card';
-        card.innerHTML = `<strong>${member}</strong><br><button class="remove-btn" data-member="${member}">Remove</button>`;
-        card.addEventListener('click', (e) => {
-          if (e.target.classList.contains('remove-btn')) return;
-          openMemberModal(member);
-        });
-        card.querySelector('.remove-btn').addEventListener('click', () => {
-          if (confirm(`Remove ${member}?`)) {
-            familyData.members = familyData.members.filter(x => x !== member);
-            delete familyData.contributions[member];
-            saveData(); renderMembers(searchTerm); renderContributions(); renderAnalysis();
-          }
-        });
+    function renderMembers(search=''){
+      const list=document.getElementById('member-list');
+      list.innerHTML='';
+      const found=familyData.members.filter(m=>m.toLowerCase().includes(search.toLowerCase()));
+      found.forEach(member=>{
+        const card=document.createElement('div');
+        card.className='member-card';
+        card.textContent=member;
+        card.addEventListener('click',()=>openMemberModal(member));
         list.appendChild(card);
       });
     }
 
-    // Modal open
-    function openMemberModal(member) {
-      const modal = document.getElementById('member-modal');
-      const body = document.getElementById('modal-body');
-      modal.style.display = 'flex';
-      body.innerHTML = `<h3>${member}'s Contributions</h3>`;
+    function openMemberModal(member){
+      const modal=document.getElementById('member-modal');
+      const body=document.getElementById('modal-body');
+      modal.style.display='flex';
+      body.innerHTML=`<h3>${member}'s Contributions</h3>`;
 
-      const form = document.createElement('form');
-      form.innerHTML = `
-        <input type="date" required>
-        <input type="number" placeholder="Amount in KES" min="0" required>
-        <button type="submit">Add Contribution</button>`;
-      form.addEventListener('submit', e => {
+      const form=document.createElement('form');
+      form.innerHTML=`<input type="date" required><input type="number" placeholder="Amount in KES" min="0" required><button type="submit">Add</button>`;
+      form.addEventListener('submit',e=>{
         e.preventDefault();
-        const date = form.querySelector('input[type=date]').value;
-        const amount = parseFloat(form.querySelector('input[type=number]').value);
-        familyData.contributions[member].push({ date, amount });
-        saveData();
-        openMemberModal(member);
-        renderAnalysis();
+        const date=form.querySelector('input[type=date]').value;
+        const amt=parseFloat(form.querySelector('input[type=number]').value);
+        familyData.contributions[member].push({date,amount:amt});
+        saveData(); openMemberModal(member); renderAnalysis();
       });
       body.appendChild(form);
 
-      const ul = document.createElement('ul');
-      familyData.contributions[member].forEach(c => {
-        const li = document.createElement('li');
-        li.className = 'contribution-item';
-        li.textContent = `${c.date}: ${c.amount.toLocaleString()} KES`;
+      const ul=document.createElement('ul');
+      familyData.contributions[member].forEach(c=>{
+        const li=document.createElement('li');
+        li.className='contribution-item';
+        li.textContent=`${c.date}: ${c.amount.toLocaleString()} KES`;
         ul.appendChild(li);
       });
       body.appendChild(ul);
-    }
-    document.getElementById('close-modal').addEventListener('click', () => {
-      document.getElementById('member-modal').style.display = 'none';
-    });
 
-    function renderContributions() {
-      const div = document.getElementById('contribution-sections');
-      div.innerHTML = '<select id="member-select"><option value="">Select a member</option></select>';
-      const select = div.querySelector('select');
-      familyData.members.forEach(m => {
-        select.innerHTML += `<option value="${m}">${m}</option>`;
-      });
-      select.addEventListener('change', () => {
-        if (select.value) openMemberModal(select.value);
-      });
+      const exportDiv=document.createElement('div');
+      const pdfBtn=document.createElement('button'); pdfBtn.textContent='Export PDF';
+      pdfBtn.onclick=()=>exportPDF(member);
+      const excelBtn=document.createElement('button'); excelBtn.textContent='Export Excel';
+      excelBtn.onclick=()=>exportExcel(member);
+      exportDiv.appendChild(pdfBtn); exportDiv.appendChild(excelBtn);
+      body.appendChild(exportDiv);
     }
 
-    function renderAnalysis() {
-      let total = 0; const totals = {};
-      familyData.members.forEach(m => {
-        totals[m] = familyData.contributions[m].reduce((s,c) => s+c.amount, 0);
-        total += totals[m];
+    function exportPDF(member){
+      const { jsPDF } = window.jspdf;
+      const doc=new jsPDF();
+      doc.text(`${member}'s Contributions`,10,10);
+      let y=20;
+      familyData.contributions[member].forEach(c=>{
+        doc.text(`${c.date}: ${c.amount} KES`,10,y);
+        y+=10;
       });
-      document.getElementById('total-savings').textContent = total.toLocaleString();
-
-      const ctx = document.getElementById('contribution-chart').getContext('2d');
-      if (window.myChart) window.myChart.destroy();
-      window.myChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: familyData.members,
-          datasets: [{
-            data: familyData.members.map(m => totals[m]),
-            backgroundColor: [
-              '#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF',
-              '#FF9F40','#ADFF2F','#FFD700','#20B2AA','#87CEEB',
-              '#778899','#B0C4DE','#FFE4C4','#FF4500','#E6E6FA','#CD5C5C']
-          }]
-        },
-        options: { responsive: true, plugins: { legend: { position: 'top' } } }
-      });
+      doc.save(`${member}_contributions.pdf`);
+    }
+    function exportExcel(member){
+      const data=familyData.contributions[member].map(c=>({Date:c.date,Amount:c.amount}));
+      const ws=XLSX.utils.json_to_sheet(data);
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,member);
+      XLSX.writeFile(wb,`${member}_contributions.xlsx`);
     }
 
-    document.getElementById('add-member-form').addEventListener('submit', e => {
+    function renderAnalysis(){
+      let total=0; const totals={};
+      familyData.members.forEach(m=>{totals[m]=familyData.contributions[m].reduce((s,c)=>s+c.amount,0); total+=totals[m];});
+      document.getElementById('total-savings').textContent=total.toLocaleString();
+      const ctx=document.getElementById('contribution-chart').getContext('2d');
+      if(window.myChart) window.myChart.destroy();
+      window.myChart=new Chart(ctx,{type:'pie',data:{labels:familyData.members,datasets:[{data:familyData.members.map(m=>totals[m]),backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40','#ADFF2F','#FFD700','#20B2AA','#87CEEB','#778899','#B0C4DE','#FFE4C4','#FF4500','#E6E6FA','#CD5C5C']}]},options:{responsive:true,plugins:{legend:{position:'top'}}}});
+    }
+
+    document.getElementById('add-member-form').addEventListener('submit',e=>{
       e.preventDefault();
-      const input = document.getElementById('new-member');
-      const name = input.value.trim().toUpperCase();
-      if (name && !familyData.members.includes(name)) {
+      const name=document.getElementById('new-member').value.trim().toUpperCase();
+      if(name&&!familyData.members.includes(name)){
         familyData.members.push(name);
-        familyData.contributions[name] = [];
-        saveData();
-        renderMembers(); renderContributions(); renderAnalysis();
-        input.value = '';
+        familyData.contributions[name]=[];
+        saveData(); renderMembers(); renderAnalysis();
+        document.getElementById('new-member').value='';
       }
     });
-    document.getElementById('member-search').addEventListener('input', e => renderMembers(e.target.value));
 
-    loadData(); renderMembers(); renderContributions(); renderAnalysis();
+    document.getElementById('member-search').addEventListener('input',e=>renderMembers(e.target.value));
+    document.getElementById('close-modal').addEventListener('click',()=>document.getElementById('member-modal').style.display='none');
+
+    loadData(); renderMembers(); renderAnalysis();
   </script>
 </body>
 </html>
