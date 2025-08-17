@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABA NAMUREMBO - Family Contributions Group</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f4e8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            background-color: #ffcc00;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #006600;
+        }
+        p.motto {
+            font-style: italic;
+            color: #666;
+        }
+        section {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        #member-search {
+            margin-bottom: 10px;
+        }
+        #member-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .member-card {
+            background-color: #e6ffe6;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .remove-btn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            padding: 2px 5px;
+        }
+        .remove-btn:hover {
+            background-color: #cc0000;
+        }
+        form {
+            margin-top: 10px;
+        }
+        input[type="text"], input[type="date"], input[type="number"] {
+            padding: 5px;
+            margin-right: 5px;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #006600;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #009900;
+        }
+        .contribution-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .contribution-item {
+            background-color: #f0f0f0;
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        #analysis {
+            text-align: center;
+        }
+        #chart {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ABA NAMUREMBO</h1>
+        <p class="motto">Together as a family, we build our future – one contribution at a time.</p>
+        <p>Welcome to our cherished family contributions group. Let's nurture our shared dreams with every Kenyan Shilling.</p>
+    </header>
+
+    <section id="members">
+        <h2>Our Beloved Family Members</h2>
+        <input type="text" id="member-search" placeholder="Search for a family member...">
+        <div id="member-list"></div>
+        <form id="add-member-form">
+            <input type="text" id="new-member" placeholder="Enter new member's name" required>
+            <button type="submit">Add New Family Member</button>
+        </form>
+    </section>
+
+    <section id="contributions">
+        <h2>Family Contributions</h2>
+        <p>Select a member to view or add contributions in Kenyan Shillings (KES).</p>
+        <div id="contribution-sections"></div>
+    </section>
+
+    <section id="analysis">
+        <h2>Overall Family Progress</h2>
+        <p>Total Family Savings: <span id="total-savings">0</span> KES</p>
+        <p>Watch our collective growth! The chart below shows each member's total contributions.</p>
+        <canvas id="contribution-chart"></canvas>
+    </section>
+
+    <script>
+        // Data structure
+        let familyData = {
+            members: ['DAD', 'MOM', 'PIPI', 'NAWI', 'MAGA', 'REGI', 'LOLO', 'ZAC', 'LEONE', 'ANDY', 'PATRICE', 'JOHN', 'JOFU', 'NORA', 'PAUL', 'DUVU'],
+            contributions: {}
+        };
+
+        // Initialize contributions for each member
+        function initData() {
+            familyData.members.forEach(member => {
+                if (!familyData.contributions[member]) {
+                    familyData.contributions[member] = [];
+                }
+            });
+        }
+
+        // Load data from localStorage
+        function loadData() {
+            const storedData = localStorage.getItem('abaNamuremboData');
+            if (storedData) {
+                familyData = JSON.parse(storedData);
+            } else {
+                initData();
+                saveData();
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('abaNamuremboData', JSON.stringify(familyData));
+        }
+
+        // Render member list with search filter
+        function renderMembers(searchTerm = '') {
+            const memberList = document.getElementById('member-list');
+            memberList.innerHTML = '';
+            const filteredMembers = familyData.members.filter(member => 
+                member.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            filteredMembers.forEach(member => {
+                const card = document.createElement('div');
+                card.className = 'member-card';
+                card.innerHTML = `
+                    ${member}
+                    <button class="remove-btn" data-member="${member}">Remove</button>
+                `;
+                card.querySelector('.remove-btn').addEventListener('click', () => {
+                    if (confirm(`Are you sure you want to remove ${member}?`)) {
+                        familyData.members = familyData.members.filter(m => m !== member);
+                        delete familyData.contributions[member];
+                        saveData();
+                        renderMembers(searchTerm);
+                        renderContributions();
+                        renderAnalysis();
+                    }
+                });
+                memberList.appendChild(card);
+            });
+        }
+
+        // Render contribution sections
+        function renderContributions() {
+            const sections = document.getElementById('contribution-sections');
+            sections.innerHTML = '';
+            const select = document.createElement('select');
+            select.id = 'member-select';
+            select.innerHTML = '<option value="">Select a member</option>';
+            familyData.members.forEach(member => {
+                select.innerHTML += `<option value="${member}">${member}</option>`;
+            });
+            sections.appendChild(select);
+
+            const contribDiv = document.createElement('div');
+            contribDiv.id = 'selected-member-contrib';
+            sections.appendChild(contribDiv);
+
+            select.addEventListener('change', () => {
+                const member = select.value;
+                contribDiv.innerHTML = '';
+                if (member) {
+                    const div = document.createElement('div');
+                    div.innerHTML = `<h3>${member}'s Contributions</h3>`;
+                    
+                    // Form to add contribution
+                    const form = document.createElement('form');
+                    form.innerHTML = `
+                        <input type="date" class="contrib-date" required>
+                        <input type="number" class="contrib-amount" placeholder="Amount in KES" min="0" required>
+                        <button type="submit">Add Contribution</button>
+                    `;
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const date = form.querySelector('.contrib-date').value;
+                        const amount = parseFloat(form.querySelector('.contrib-amount').value);
+                        if (date && amount) {
+                            familyData.contributions[member].push({ date, amount });
+                            saveData();
+                            renderContributions();
+                            renderAnalysis();
+                        }
+                    });
+                    div.appendChild(form);
+
+                    // List of contributions
+                    const ul = document.createElement('ul');
+                    ul.className = 'contribution-list';
+                    familyData.contributions[member].forEach(contrib => {
+                        const li = document.createElement('li');
+                        li.className = 'contribution-item';
+                        li.textContent = `${contrib.date}: ${contrib.amount.toLocaleString()} KES`;
+                        ul.appendChild(li);
+                    });
+                    div.appendChild(ul);
+                    contribDiv.appendChild(div);
+                }
+            });
+        }
+
+        // Render analysis
+        function renderAnalysis() {
+            // Calculate total
+            let total = 0;
+            const memberTotals = {};
+            familyData.members.forEach(member => {
+                memberTotals[member] = familyData.contributions[member].reduce((sum, contrib) => sum + contrib.amount, 0);
+                total += memberTotals[member];
+            });
+            document.getElementById('total-savings').textContent = total.toLocaleString();
+
+            // Chart
+            const ctx = document.getElementById('contribution-chart').getContext('2d');
+            if (window.myChart) {
+                window.myChart.destroy();
+            }
+            window.myChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: familyData.members,
+                    datasets: [{
+                        data: familyData.members.map(m => memberTotals[m]),
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                            '#FF9F40', '#E7E9ED', '#C9CBCF', '#ADFF2F', '#FFD700',
+                            '#20B2AA', '#87CEEB', '#778899', '#B0C4DE', '#FFE4C4', '#FF4500'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.label}: ${context.raw.toLocaleString()} KES`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Add new member
+        document.getElementById('add-member-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newMember = document.getElementById('new-member').value.trim().toUpperCase();
+            if (newMember && !familyData.members.includes(newMember)) {
+                familyData.members.push(newMember);
+                familyData.contributions[newMember] = [];
+                saveData();
+                renderMembers(document.getElementById('member-search').value);
+                renderContributions();
+                renderAnalysis();
+                document.getElementById('new-member').value = '';
+            }
+        });
+
+        // Search functionality
+        document.getElementById('member-search').addEventListener('input', (e) => {
+            renderMembers(e.target.value);
+        });
+
+        // Initial load
+        loadData();
+        renderMembers();
+        renderContributions();
+        renderAnalysis();
+    </script>
+</body>
+</html>
