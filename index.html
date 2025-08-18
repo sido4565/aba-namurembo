@@ -1,85 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Family Contributions</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f5f5f5;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    #login, #app {
-      max-width: 500px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #007BFF;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      background: #f9f9f9;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 5px;
-      border-left: 4px solid #007BFF;
-    }
-  </style>
-</head>
-<body>
-  <h1>Family Contributions</h1>
-
-  <!-- Login Section -->
-  <div id="login">
-    <h3>Login</h3>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <button onclick="signup()">Sign Up</button>
-  </div>
-
-  <!-- App Section -->
-  <div id="app" style="display:none;">
-    <h3>Welcome! Add a contribution</h3>
-    <input type="text" id="contribution" placeholder="Enter contribution">
-    <button onclick="addContribution()">Add Contribution</button>
-    <h3>All Contributions</h3>
-    <ul id="contributionsList"></ul>
-    <button onclick="logout()">Logout</button>
-  </div>
-
-  <!-- Firebase SDKs -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getAuth, 
+      GoogleAuthProvider, 
+      signInWithPopup, 
+      onAuthStateChanged, 
+      signOut 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      query, 
+      orderBy, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Your Firebase config
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDN7zu2pc-DRSTzEZLYq4BCXDKItiwbDi8",
       authDomain: "family-contributions.firebaseapp.com",
@@ -93,83 +37,110 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
 
-    const loginDiv = document.getElementById("login");
-    const appDiv = document.getElementById("app");
+    // Elements
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("userInfo");
+    const contributionForm = document.getElementById("contributionForm");
     const contributionsList = document.getElementById("contributionsList");
+    const searchInput = document.getElementById("searchInput");
 
-    // Auth state change listener
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        loginDiv.style.display = "none";
-        appDiv.style.display = "block";
-        loadContributions();
-      } else {
-        loginDiv.style.display = "block";
-        appDiv.style.display = "none";
+    let allContributions = []; // store all contributions locally
+
+    // Google Login
+    loginBtn.addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        alert("Login failed: " + error.message);
       }
     });
 
-    // Sign Up
-    async function signup() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        alert("Sign up successful!");
-      } catch (error) {
-        alert(error.message);
-      }
-    }
-
-    // Login
-    async function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (error) {
-        alert(error.message);
-      }
-    }
-
     // Logout
-    async function logout() {
+    logoutBtn.addEventListener("click", async () => {
       await signOut(auth);
-    }
+    });
 
-    // Add Contribution
-    async function addContribution() {
-      const contributionInput = document.getElementById("contribution");
-      const contribution = contributionInput.value.trim();
-      if (contribution) {
-        await addDoc(collection(db, "contributions"), {
-          text: contribution,
-          createdAt: serverTimestamp()
-        });
-        contributionInput.value = "";
-      }
-    }
-
-    // Load contributions in real-time
-    function loadContributions() {
-      const q = query(collection(db, "contributions"), orderBy("createdAt", "desc"));
-      onSnapshot(q, (snapshot) => {
+    // Auth State
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        userInfo.textContent = `Hello, ${user.displayName}`;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "block";
+        contributionForm.style.display = "block";
+        searchInput.style.display = "block";
+        loadContributions();
+      } else {
+        userInfo.textContent = "Not signed in";
+        loginBtn.style.display = "block";
+        logoutBtn.style.display = "none";
+        contributionForm.style.display = "none";
+        searchInput.style.display = "none";
         contributionsList.innerHTML = "";
+      }
+    });
+
+    // Add contribution
+    contributionForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const amount = e.target.amount.value;
+      if (!amount) return alert("Enter amount!");
+      await addDoc(collection(db, "contributions"), {
+        user: auth.currentUser.displayName,
+        amount,
+        timestamp: new Date()
+      });
+      e.target.reset();
+    });
+
+    // Load contributions (real-time)
+    function loadContributions() {
+      const q = query(collection(db, "contributions"), orderBy("timestamp", "desc"));
+      onSnapshot(q, (snapshot) => {
+        allContributions = []; // reset
         snapshot.forEach((doc) => {
-          const li = document.createElement("li");
-          li.textContent = doc.data().text;
-          contributionsList.appendChild(li);
+          allContributions.push(doc.data());
         });
+        renderContributions(allContributions);
       });
     }
 
-    // Make functions global
-    window.signup = signup;
-    window.login = login;
-    window.logout = logout;
-    window.addContribution = addContribution;
+    // Render contributions
+    function renderContributions(contributions) {
+      contributionsList.innerHTML = "";
+      contributions.forEach((data) => {
+        const li = document.createElement("li");
+        li.textContent = `${data.user} contributed ${data.amount}`;
+        contributionsList.appendChild(li);
+      });
+    }
 
+    // Search filter
+    searchInput.addEventListener("input", () => {
+      const term = searchInput.value.toLowerCase();
+      const filtered = allContributions.filter(c => 
+        c.user.toLowerCase().includes(term)
+      );
+      renderContributions(filtered);
+    });
   </script>
+</head>
+<body>
+  <h1>💰 Family Contributions</h1>
+  <p id="userInfo">Not signed in</p>
+  <button id="loginBtn">Sign in with Google</button>
+  <button id="logoutBtn" style="display:none;">Logout</button>
+
+  <form id="contributionForm" style="display:none;">
+    <input type="number" name="amount" placeholder="Enter contribution amount" required />
+    <button type="submit">Contribute</button>
+  </form>
+
+  <input id="searchInput" type="text" placeholder="Search by name..." style="display:none; margin-top:10px;" />
+
+  <h2>📌 Contributions</h2>
+  <ul id="contributionsList"></ul>
 </body>
 </html>
