@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+HEAD
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ABA NAMUREMBO - Family Contributions Group</title>
@@ -315,5 +316,191 @@
         renderContributions();
         renderAnalysis();
     </script>
+    
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💰 Family Contributions</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f8f8f8; margin: 0; padding: 20px; }
+    h1 { text-align: center; }
+    .card { background: #fff; padding: 20px; margin: 20px auto; width: 400px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    input, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { background: #00b140; color: white; border: none; cursor: pointer; }
+    button:hover { background: #008c34; }
+    #results { margin-top: 20px; }
+    .contribution { background: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; }
+    .export-buttons { margin-top: 15px; display: flex; gap: 10px; }
+  </style>
+</head>
+<body>
+  <h1>💰 Family Contributions</h1>
+
+  <div class="card">
+    <h3>Add Contribution</h3>
+    <input type="text" id="nameInput" placeholder="Enter name">
+    <input type="number" id="amountInput" placeholder="Enter amount">
+    <button onclick="addContribution()">Submit</button>
+  </div>
+
+  <div class="card">
+    <h3>Search Contributions</h3>
+    <input type="text" id="searchInput" placeholder="Search by name..." onkeyup="searchContributions()">
+    <div id="results"></div>
+  </div>
+
+  <div class="card">
+    <h3>📊 Family Summary</h3>
+    <button onclick="generateSummary()">Generate Summary</button>
+    <div class="export-buttons">
+      <button onclick="exportPDF()">Export PDF</button>
+      <button onclick="exportExcel()">Export Excel</button>
+    </div>
+    <div id="summary"></div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDN7zu2pc-DRSTzEZLYq4BCXDKItiwbDi8",
+      authDomain: "family-contributions.firebaseapp.com",
+      projectId: "family-contributions",
+      storageBucket: "family-contributions.firebasestorage.app",
+      messagingSenderId: "322744991780",
+      appId: "1:322744991780:web:eb4843cf64ef3245a218b1"
+    };
+
+    // Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const contributionsRef = collection(db, "contributions");
+
+    // Add contribution
+    async function addContribution() {
+      const name = document.getElementById("nameInput").value.trim();
+      const amount = parseFloat(document.getElementById("amountInput").value);
+
+      if (!name || isNaN(amount)) {
+        alert("Please enter a valid name and amount.");
+        return;
+      }
+
+      await addDoc(contributionsRef, { name, amount, date: new Date() });
+
+      document.getElementById("nameInput").value = "";
+      document.getElementById("amountInput").value = "";
+      alert("Contribution added!");
+    }
+
+    // Search contributions by name
+    async function searchContributions() {
+      const searchValue = document.getElementById("searchInput").value.trim().toLowerCase();
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+
+      if (!searchValue) return;
+
+      const q = query(contributionsRef, where("name", "==", searchValue));
+      const querySnapshot = await getDocs(q);
+
+      let total = 0;
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        resultsDiv.innerHTML += `<div class="contribution">${data.name} - $${data.amount}</div>`;
+        total += data.amount;
+      });
+
+      if (total > 0) {
+        resultsDiv.innerHTML += `<div><b>Total: $${total}</b></div>`;
+      } else {
+        resultsDiv.innerHTML = "<p>No contributions found.</p>";
+      }
+    }
+
+    // Generate family summary (live updates)
+    function generateSummary() {
+      const summaryDiv = document.getElementById("summary");
+      summaryDiv.innerHTML = "<p>Loading...</p>";
+
+      onSnapshot(contributionsRef, (snapshot) => {
+        const contributions = {};
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (!contributions[data.name]) contributions[data.name] = 0;
+          contributions[data.name] += data.amount;
+        });
+
+        summaryDiv.innerHTML = "<h4>Family Contributions</h4>";
+        let grandTotal = 0;
+        for (const [name, total] of Object.entries(contributions)) {
+          summaryDiv.innerHTML += `<div>${name}: $${total}</div>`;
+          grandTotal += total;
+        }
+        summaryDiv.innerHTML += `<hr><b>Grand Total: $${grandTotal}</b>`;
+      });
+    }
+
+    // Export to PDF
+    async function exportPDF() {
+      const { jsPDF } = await import("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.es.min.js");
+      const doc = new jsPDF();
+      doc.text("Family Contributions Summary", 10, 10);
+
+      let y = 20;
+      const snapshot = await getDocs(contributionsRef);
+      let contributions = {};
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (!contributions[data.name]) contributions[data.name] = 0;
+        contributions[data.name] += data.amount;
+      });
+
+      let grandTotal = 0;
+      for (const [name, total] of Object.entries(contributions)) {
+        doc.text(`${name}: $${total}`, 10, y);
+        y += 10;
+        grandTotal += total;
+      }
+      doc.text(`Grand Total: $${grandTotal}`, 10, y + 10);
+
+      doc.save("family_contributions.pdf");
+    }
+
+    // Export to Excel
+    async function exportExcel() {
+      const XLSX = await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm");
+      const snapshot = await getDocs(contributionsRef);
+
+      let contributions = {};
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (!contributions[data.name]) contributions[data.name] = 0;
+        contributions[data.name] += data.amount;
+      });
+
+      let rows = [["Name", "Total"]];
+      for (const [name, total] of Object.entries(contributions)) {
+        rows.push([name, total]);
+      }
+
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Contributions");
+      XLSX.writeFile(workbook, "family_contributions.xlsx");
+    }
+
+    // Make functions global
+    window.addContribution = addContribution;
+    window.searchContributions = searchContributions;
+    window.generateSummary = generateSummary;
+    window.exportPDF = exportPDF;
+    window.exportExcel = exportExcel;
+
+  </script>
+d313ee2 (Add Firebase-authenticated Family Contributions app)
 </body>
 </html>
